@@ -1,0 +1,22 @@
+[package]
+name = "cryptotithe"
+version = "0.0.1"
+authors = ["starsoccer <1938666+starsoccer@users.noreply.github.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+arbitrary = { version = "1.0.0", features = ["derive"] }
+strum = "0.20"
+strum_macros = "0.20"
+rust_decimal = "1.10.3"
+rust_decimal_macros = "1.10.3"
+wasm-bindgen = { version = "0.2.71", features = ["serde-serialize"] }
+serde = { version = "1.0.123", features = ["derive"] }
+web-sys = { version = "0.3.48", features = ["console"] } 
+js-sys = "0.3.48"
+rand = "0.8.0"

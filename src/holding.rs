@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use rust_decimal::prelude::Decimal;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct CurrencyHolding {

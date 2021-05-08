@@ -14,7 +14,7 @@ pub struct GetHolding {
 }
 
 pub fn get_currency_holding(
-    currency_holdings: &Vec<holding::CurrencyHolding>,
+    currency_holdings: &[holding::CurrencyHolding],
     method: method::Method,
     trade: trade::Trade,
 ) -> usize {
@@ -36,9 +36,9 @@ pub fn get_currency_holding(
 #[cfg(test)]
 mod tests {
     use super::get_currency_holding;
+    use crate::holding::CurrencyHolding;
     use crate::mocks;
     use crate::{method, YEAR_IN_MILLISECONDS};
-    use crate::holding::CurrencyHolding;
     use std::time::SystemTime;
 
     #[test]
@@ -201,17 +201,27 @@ mod tests {
             get_currency_holding(currency_holdings, method::Method::HTFO, trades[0].clone());
 
         let lcfo_currency_holdings = {
-            let short_term_currency_holdings: Vec<CurrencyHolding> = currency_holdings.clone().into_iter().filter(|c| trades[0].date.wrapping_sub(c.date) <= YEAR_IN_MILLISECONDS).collect();
+            let short_term_currency_holdings: Vec<CurrencyHolding> = currency_holdings
+                .clone()
+                .into_iter()
+                .filter(|c| trades[0].date.wrapping_sub(c.date) <= YEAR_IN_MILLISECONDS)
+                .collect();
             if short_term_currency_holdings.len() > 0 {
                 short_term_currency_holdings
             } else {
                 currency_holdings.clone()
             }
         };
-        let lcfo_result =
-            get_currency_holding(&lcfo_currency_holdings, method::Method::LCFO, trades[0].clone());
+        let lcfo_result = get_currency_holding(
+            &lcfo_currency_holdings,
+            method::Method::LCFO,
+            trades[0].clone(),
+        );
 
-        assert_eq!(currency_holdings[htfo_result], lcfo_currency_holdings[lcfo_result]);
+        assert_eq!(
+            currency_holdings[htfo_result],
+            lcfo_currency_holdings[lcfo_result]
+        );
     }
 
     #[test]
@@ -284,18 +294,27 @@ mod tests {
         let ltfo_result =
             get_currency_holding(currency_holdings, method::Method::LTFO, trades[0].clone());
 
-
         let hcfo_currency_holdings = {
-            let long_term_currency_holdings: Vec<CurrencyHolding> = currency_holdings.clone().into_iter().filter(|c| trades[0].date.wrapping_sub(c.date) >= YEAR_IN_MILLISECONDS).collect();
+            let long_term_currency_holdings: Vec<CurrencyHolding> = currency_holdings
+                .clone()
+                .into_iter()
+                .filter(|c| trades[0].date.wrapping_sub(c.date) >= YEAR_IN_MILLISECONDS)
+                .collect();
             if long_term_currency_holdings.len() > 0 {
                 long_term_currency_holdings
             } else {
                 currency_holdings.clone()
             }
         };
-        let hcfo_result =
-            get_currency_holding(&hcfo_currency_holdings, method::Method::HCFO, trades[0].clone());
+        let hcfo_result = get_currency_holding(
+            &hcfo_currency_holdings,
+            method::Method::HCFO,
+            trades[0].clone(),
+        );
 
-        assert_eq!(currency_holdings[ltfo_result], hcfo_currency_holdings[hcfo_result]);
+        assert_eq!(
+            currency_holdings[ltfo_result],
+            hcfo_currency_holdings[hcfo_result]
+        );
     }
 }

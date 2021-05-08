@@ -4,11 +4,12 @@ use rust_decimal_macros::*;
 use std::clone::Clone;
 use wasm_bindgen::prelude::*;
 mod get_currency_holding;
+use serde::{Deserialize, Serialize};
 
-#[wasm_bindgen]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HoldingSelection {
-    deducted_holdings: Vec<holding::CurrencyHolding>,
-    new_holdings: holding::Holdings,
+    pub deducted_holdings: Vec<holding::CurrencyHolding>,
+    pub new_holdings: holding::Holdings,
 }
 
 #[wasm_bindgen]
@@ -17,10 +18,10 @@ pub fn holding_selection_wasm(
     trade: &JsValue,
     fiat_currency: String,
     method: method::Method,
-) -> HoldingSelection {
+) -> JsValue {
     let holdings: holding::Holdings = holdings.into_serde().unwrap();
     let trade: trade::Trade = trade.into_serde().unwrap();
-    holding_selection(holdings, trade, fiat_currency, method)
+    JsValue::from_serde(&holding_selection(holdings, trade, fiat_currency, method)).unwrap()
 }
 
 pub fn holding_selection(
@@ -39,7 +40,7 @@ pub fn holding_selection(
                 method,
                 trade.clone(),
             );
-            let mut selected_currency_holding = current_currency_holding
+            let selected_currency_holding = current_currency_holding
                 .get_mut(selected_currency_holding_index)
                 .unwrap();
 
@@ -48,14 +49,14 @@ pub fn holding_selection(
             currency_holding.push(result.deducted_currency_holding);
 
             if result.amount_remaining.is_zero() {
-                selected_currency_holding.amount = selected_currency_holding.amount - amount_used;
+                selected_currency_holding.amount -= amount_used;
             } else {
                 current_currency_holding.remove(selected_currency_holding_index);
             }
 
             amount_used = result.amount_remaining;
 
-            if currency_holding.len() == 0 {
+            if currency_holding.is_empty() {
                 holdings.0.remove(&trade.sold_currency);
             }
         } else {
@@ -78,10 +79,10 @@ pub fn holding_selection(
         }
     }
 
-    return HoldingSelection {
+    HoldingSelection {
         deducted_holdings: currency_holding,
         new_holdings: holdings,
-    };
+    }
 }
 
 struct CheckCurrencyHoldingAmount {
@@ -94,7 +95,7 @@ fn check_currency_holding_amount(
     holding_to_check: holding::CurrencyHolding,
 ) -> CheckCurrencyHoldingAmount {
     if holding_to_check.amount > amount_used {
-        return CheckCurrencyHoldingAmount {
+        CheckCurrencyHoldingAmount {
             amount_remaining: Zero::zero(),
             deducted_currency_holding: holding::CurrencyHolding {
                 amount: amount_used,
@@ -102,9 +103,9 @@ fn check_currency_holding_amount(
                 date: holding_to_check.date,
                 location: holding_to_check.location,
             },
-        };
+        }
     } else {
-        return CheckCurrencyHoldingAmount {
+        CheckCurrencyHoldingAmount {
             amount_remaining: amount_used - holding_to_check.amount,
             deducted_currency_holding: holding::CurrencyHolding {
                 amount: holding_to_check.amount,
@@ -112,7 +113,7 @@ fn check_currency_holding_amount(
                 date: holding_to_check.date,
                 location: holding_to_check.location,
             },
-        };
+        }
     }
 }
 

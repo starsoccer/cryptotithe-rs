@@ -30,8 +30,8 @@ const DEFAULT_STARTING: u64 = 1262322000000;
 
 fn date_in_range(start: Option<u64>, end: Option<u64>) -> u64 {
     let starting_date = start.unwrap_or(DEFAULT_STARTING);
-    let ending_date = end.unwrap_or(now_u64());
-    
+    let ending_date = end.unwrap_or_else(now_u64);
+
     thread_rng().gen_range(starting_date..ending_date)
 }
 
@@ -50,7 +50,7 @@ pub fn mock_currency_holdings(
         });
     }
 
-    return currency_holdings;
+    currency_holdings
 }
 
 pub fn mock_holdings(
@@ -68,7 +68,7 @@ pub fn mock_holdings(
         );
     }
 
-    return holdings;
+    holdings
 }
 
 pub fn mock_trades(
@@ -84,7 +84,7 @@ pub fn mock_trades(
         let a = Vec::new();
         let currency_holdings = current_holdings.0.get(currency).unwrap_or(&a);
         let total_holdings: Decimal = currency_holdings
-            .into_iter()
+            .iter()
             .fold(Zero::zero(), |acc, item| acc + item.amount);
 
         for _ in 0..amount {
@@ -100,9 +100,9 @@ pub fn mock_trades(
             };
 
             trades.push(trade::Trade {
-                bought_currency: bought_currency,
+                bought_currency,
                 sold_currency: currency.clone(),
-                amount_sold: amount_sold,
+                amount_sold,
                 rate: rand_decimal(),
                 date: rand_date(),
                 exchange_id: rand_string(),
@@ -114,5 +114,5 @@ pub fn mock_trades(
         }
     }
 
-    return trades;
+    trades
 }

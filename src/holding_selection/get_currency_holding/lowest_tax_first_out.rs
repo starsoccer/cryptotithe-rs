@@ -2,7 +2,7 @@ use crate::holding::CurrencyHolding;
 use crate::trade::Trade;
 use crate::YEAR_IN_MILLISECONDS;
 
-pub fn lowest_tax_first_out(trade: Trade, currency_holdings: &Vec<CurrencyHolding>) -> usize {
+pub fn lowest_tax_first_out(trade: Trade, currency_holdings: &[CurrencyHolding]) -> usize {
     currency_holdings
         .iter()
         .enumerate()

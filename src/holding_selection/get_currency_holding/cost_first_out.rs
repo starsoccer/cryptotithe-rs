@@ -1,6 +1,6 @@
 use crate::holding::CurrencyHolding;
 
-pub fn cost_first_out(currency_holdings: &Vec<CurrencyHolding>, highest: bool) -> usize {
+pub fn cost_first_out(currency_holdings: &[CurrencyHolding], highest: bool) -> usize {
     currency_holdings
         .iter()
         .enumerate()

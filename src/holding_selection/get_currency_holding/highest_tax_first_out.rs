@@ -2,7 +2,7 @@ use crate::holding::CurrencyHolding;
 use crate::trade::Trade;
 use crate::YEAR_IN_MILLISECONDS;
 
-pub fn highest_tax_first_out(trade: Trade, currency_holdings: &Vec<CurrencyHolding>) -> usize {
+pub fn highest_tax_first_out(trade: Trade, currency_holdings: &[CurrencyHolding]) -> usize {
     currency_holdings
         .iter()
         .enumerate()
@@ -15,27 +15,30 @@ pub fn highest_tax_first_out(trade: Trade, currency_holdings: &Vec<CurrencyHoldi
                         >= YEAR_IN_MILLISECONDS
                     {
                         // current holding triggers long term gains
-                        if trade.date.wrapping_sub(highest_tax_holding.date) >= YEAR_IN_MILLISECONDS &&
-                            current_currency_holding.rate_in_fiat < highest_tax_holding.rate_in_fiat
+                        if trade.date.wrapping_sub(highest_tax_holding.date) >= YEAR_IN_MILLISECONDS
+                            && current_currency_holding.rate_in_fiat
+                                < highest_tax_holding.rate_in_fiat
                         {
-                            return (index, Some(current_currency_holding)); 
+                            return (index, Some(current_currency_holding));
                         }
-                        return (highest_index, Some(highest_tax_holding)); // current holding isnt highest
+                        (highest_index, Some(highest_tax_holding)) // current holding isnt highest
                     } else {
                         // current holding is short term
-                        if trade.date.wrapping_sub(highest_tax_holding.date) >= YEAR_IN_MILLISECONDS {
+                        if trade.date.wrapping_sub(highest_tax_holding.date) >= YEAR_IN_MILLISECONDS
+                        {
                             // current highest is long term but short term tax is always higher
-                            return (index, Some(current_currency_holding));
+                            (index, Some(current_currency_holding))
                         } else {
-                            if current_currency_holding.rate_in_fiat < highest_tax_holding.rate_in_fiat
+                            if current_currency_holding.rate_in_fiat
+                                < highest_tax_holding.rate_in_fiat
                             {
                                 return (index, Some(current_currency_holding)); // current holding rate in fiat is lower meaning higher cost
                             }
-                            return (highest_index, Some(highest_tax_holding));
+                            (highest_index, Some(highest_tax_holding))
                         }
                     }
                 } else {
-                    return (index, Some(current_currency_holding));
+                    (index, Some(current_currency_holding))
                 }
             },
         )
@@ -48,6 +51,6 @@ pub fn highest_tax_first_out(trade: Trade, currency_holdings: &Vec<CurrencyHoldi
                     return currentCurrencyHolding;
                 }
                 return highestTax;
-                
+
 
 */

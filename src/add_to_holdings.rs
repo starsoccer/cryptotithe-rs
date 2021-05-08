@@ -1,6 +1,5 @@
 use crate::holding::{CurrencyHolding, Holdings};
-use rust_decimal::prelude::{Decimal, FromPrimitive, ToPrimitive, Zero};
-use crate::trade::{TradeWithCostBasis, TradeWithFiatRate};
+use rust_decimal::prelude::Decimal;
 
 pub fn add_to_holdings(
     old_holdings: Holdings,
@@ -10,13 +9,13 @@ pub fn add_to_holdings(
     date: u64,
     location: Option<String>,
 ) -> Holdings {
-    let mut holdings = old_holdings.clone();
+    let mut holdings = old_holdings;
 
     let currency_holding = CurrencyHolding {
-        amount: amount,
+        amount,
         rate_in_fiat: fiat_rate,
-        date: date,
-        location: location.unwrap_or("".to_owned()),
+        date,
+        location: location.unwrap_or_else(|| "".to_owned()),
     };
 
     if let Some(currency_holdings) = holdings.0.get_mut(&currency) {
@@ -25,15 +24,14 @@ pub fn add_to_holdings(
         holdings.0.insert(currency, vec![currency_holding]);
     }
 
-    return holdings;
+    holdings
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::mocks;
-    use rust_decimal::prelude::Decimal;
-    use rust_decimal_macros::*;
     use crate::add_to_holdings::add_to_holdings;
+    use crate::mocks;
+    use rust_decimal_macros::*;
 
     #[test]
     fn add_new_curreny_holding() {
@@ -41,7 +39,8 @@ mod tests {
         assert_eq!(holdings.0.keys().len(), 0);
 
         let currency = "BTC";
-        let new_holdings = add_to_holdings(holdings, currency.to_string(), dec!(0), dec!(0), 1234, None);
+        let new_holdings =
+            add_to_holdings(holdings, currency.to_string(), dec!(0), dec!(0), 1234, None);
 
         assert_eq!(new_holdings.0.keys().len(), 1);
     }
@@ -53,10 +52,20 @@ mod tests {
         let currency = holdings_currencies.clone().collect::<Vec<&String>>()[0];
         assert_eq!(holdings_currencies.len(), 1);
 
-        let new_holdings = add_to_holdings(holdings.clone(), currency.to_string(), dec!(0), dec!(0), 1234, None);
+        let new_holdings = add_to_holdings(
+            holdings.clone(),
+            currency.to_string(),
+            dec!(0),
+            dec!(0),
+            1234,
+            None,
+        );
 
         assert_eq!(new_holdings.0.keys().len(), 1);
-        let currency_holding = new_holdings.0.get(currency).expect("Unable to get currency holding");
+        let currency_holding = new_holdings
+            .0
+            .get(currency)
+            .expect("Unable to get currency holding");
         assert_eq!(currency_holding.len(), 4);
     }
 }

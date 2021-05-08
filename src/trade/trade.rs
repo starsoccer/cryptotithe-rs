@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
-use arbitrary::{Arbitrary, Unstructured, Result as ArbitraryResult};
+use arbitrary::{Arbitrary, Result as ArbitraryResult, Unstructured};
 use rust_decimal::prelude::{Decimal, FromPrimitive};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Trade {
@@ -23,7 +23,7 @@ pub struct Trade {
     pub transaction_fee_currency: String,
 }
 
-impl Arbitrary<'_>  for Trade {
+impl Arbitrary<'_> for Trade {
     fn arbitrary(u: &mut Unstructured<'_>) -> ArbitraryResult<Self> {
         Ok(Self {
             bought_currency: String::arbitrary(u)?,

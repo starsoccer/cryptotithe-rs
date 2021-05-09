@@ -1,6 +1,5 @@
 use arbitrary::{Arbitrary, Result as ArbitraryResult, Unstructured};
-use rust_decimal::prelude::{Decimal, FromPrimitive};
-use rust_decimal_macros::*;
+use rust_decimal::prelude::{Decimal, Zero, FromPrimitive};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
@@ -38,11 +37,11 @@ pub struct Trade {
 
 impl Trade {
     pub fn fiat_rate(&self) -> Decimal {
-        self.fiat_rate.unwrap_or_else(|| dec!(0))
+        self.fiat_rate.unwrap_or_else(Zero::zero)
     }
 
     pub fn cost_basis(&self) -> Decimal {
-        self.cost_basis.unwrap_or_else(|| dec!(0))
+        self.cost_basis.unwrap_or_else(Zero::zero)
     }
 }
 

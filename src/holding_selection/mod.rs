@@ -70,7 +70,7 @@ pub fn holding_selection(
                 currency_holding.push(holding::CurrencyHolding {
                     amount: amount_used,
                     date: trade.date,
-                    rate_in_fiat: dec!(0),
+                    rate_in_fiat: Zero::zero(),
                     location: trade.exchange.clone(),
                 });
             }

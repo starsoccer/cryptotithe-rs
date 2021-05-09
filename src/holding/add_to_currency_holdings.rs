@@ -30,7 +30,7 @@ impl Holdings {
 #[cfg(test)]
 mod tests {
     use crate::mocks;
-    use rust_decimal_macros::*;
+    use rust_decimal::prelude::Zero;
 
     #[test]
     fn add_new_curreny_holding() {
@@ -39,7 +39,7 @@ mod tests {
 
         let currency = "BTC";
         let new_holdings =
-            holdings.add_to_currency_holdings(currency.to_string(), dec!(0), dec!(0), 1234, None);
+            holdings.add_to_currency_holdings(currency.to_string(), Zero::zero(), Zero::zero(), 1234, None);
 
         assert_eq!(new_holdings.0.keys().len(), 1);
     }
@@ -53,8 +53,8 @@ mod tests {
 
         let new_holdings = holdings.add_to_currency_holdings(
             currency.to_string(),
-            dec!(0),
-            dec!(0),
+            Zero::zero(),
+            Zero::zero(),
             1234,
             None,
         );

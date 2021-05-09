@@ -1,8 +1,7 @@
 use crate::holding::Holdings;
 use crate::trade::Trade;
 use crate::method::Method;
-use rust_decimal::prelude::Decimal;
-use rust_decimal_macros::*;
+use rust_decimal::prelude::{Decimal, Zero};
 
 pub struct CalculateGains {
     new_holdings: Holdings,
@@ -23,7 +22,7 @@ pub struct Income {
 
 impl Income {
     fn fiat_rate (self: Income) -> Decimal {
-        self.fiat_rate.unwrap_or_else(|| dec!(0))
+        self.fiat_rate.unwrap_or_else(Zero::zero)
     }
 }
 
@@ -34,8 +33,8 @@ pub fn calculate_gains (
     fiat_currency: String,
     method: Method,
 ) -> CalculateGains {
-    let mut short_term_gain = dec!(0);
-    let mut long_term_gain = dec!(0);
+    let mut short_term_gain = Zero::zero();
+    let mut long_term_gain = Zero::zero();
     let mut new_holdings = holdings;
 
     let mut incomes_to_apply = incomes;
@@ -67,8 +66,8 @@ pub fn calculate_gains (
 mod tests {
     use crate::method::Method;
     use crate::mocks;
-    use crate::{QUARTER_IN_MILLISECONDS, YEAR_IN_MILLISECONDS, trade::Trade, holding::Holdings};
-    use rust_decimal::prelude::{Decimal, Zero};
+    use crate::{QUARTER_IN_MILLISECONDS, YEAR_IN_MILLISECONDS};
+    use rust_decimal::prelude::Zero;
     use rust_decimal_macros::*;
     use super::calculate_gains;
 
@@ -131,7 +130,7 @@ mod tests {
         let original_holdings = holdings.clone();
         let currency = original_holdings.0.keys().collect::<Vec<&String>>()[0];
         let currency_holdings = original_holdings.0.get(currency).unwrap();
-        let mut trades = mocks::mock_trades(1, mocks::now_u64(), holdings.clone(), true);
+        let trades = mocks::mock_trades(1, mocks::now_u64(), holdings.clone(), true);
         let result = calculate_gains(holdings, trades.clone(), vec!(), FIAT_CURRENCY.to_string(), Method::FIFO);
 
         let bought_currency_holdings = result.new_holdings.0.get(&trades[0].bought_currency).expect("bought currency not found");
@@ -152,7 +151,7 @@ mod tests {
 
         assert!(result.long_term_gain.is_zero());
 
-        let mut gain = dec!(0);
+        let mut gain = Zero::zero();
         for trade in trades {
             gain += (trade.fiat_rate() - currency_holdings[0].rate_in_fiat) * trade.amount_sold;
         }
@@ -201,7 +200,7 @@ mod tests {
 
         assert!(result.short_term_gain.is_zero());
 
-        let mut gain = dec!(0);
+        let mut gain = Zero::zero();
         for trade in trades {
             gain += (trade.fiat_rate() - currency_holdings[0].rate_in_fiat) * trade.amount_sold;
         }
@@ -248,7 +247,7 @@ mod tests {
 
         assert!(result.long_term_gain.is_zero());
 
-        let mut gain = dec!(0);
+        let mut gain = Zero::zero();
         let mut amount_left = trades[0].amount_sold;
         for holding in currency_holdings {
             if amount_left > Zero::zero() {
@@ -272,7 +271,7 @@ mod tests {
 
         assert!(result.long_term_gain.is_zero());
 
-        let mut gain = dec!(0);
+        let mut gain = Zero::zero();
         let mut amount_left = trades[0].amount_sold;
         for holding in currency_holdings {
             if amount_left > Zero::zero() {
@@ -298,7 +297,7 @@ mod tests {
 
         assert!(result.short_term_gain.is_zero());
 
-        let mut gain = dec!(0);
+        let mut gain = Zero::zero();
         let mut amount_left = trades[0].amount_sold;
         for holding in currency_holdings {
             if amount_left > Zero::zero() {
@@ -320,7 +319,7 @@ mod tests {
         let trades = mocks::mock_trades(1, mocks::now_u64(), holdings.clone(), true);
         let result = calculate_gains(holdings, trades.clone(), vec!(), FIAT_CURRENCY.to_string(), Method::FIFO);
 
-        let mut gain = dec!(0);
+        let mut gain = Zero::zero();
         let mut amount_left = trades[0].amount_sold;
         for holding in currency_holdings {
             if amount_left > Zero::zero() {

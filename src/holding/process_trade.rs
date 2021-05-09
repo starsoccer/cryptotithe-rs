@@ -4,7 +4,6 @@ use crate::method::Method;
 use crate::trade::Trade;
 use crate::{MIN_HOLDING_SIZE, YEAR_IN_MILLISECONDS};
 use rust_decimal::prelude::{Decimal, Zero};
-use rust_decimal_macros::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ProcessedTradeResult {
@@ -26,12 +25,12 @@ impl Holdings {
         fiat_currency: String,
         method: Method,
     ) -> ProcessedTradeResult {
-        let mut short_term_gain = dec!(0);
-        let mut short_term_proceeds = dec!(0);
-        let mut short_term_cost_basis = dec!(0);
-        let mut long_term_gain = dec!(0);
-        let mut long_term_proceeds = dec!(0);
-        let mut long_term_cost_basis = dec!(0);
+        let mut short_term_gain = Zero::zero();
+        let mut short_term_proceeds = Zero::zero();
+        let mut short_term_cost_basis = Zero::zero();
+        let mut long_term_gain = Zero::zero();
+        let mut long_term_proceeds = Zero::zero();
+        let mut long_term_cost_basis = Zero::zero();
 
         let mut trades_with_cost_basis: Vec<Trade> = vec![];
         let mut holdings = self;
@@ -48,7 +47,7 @@ impl Holdings {
                 Some(trade.exchange),
             );
         } else {
-            let mut fee_fiat_cost = dec!(0);
+            let mut fee_fiat_cost: Decimal = Zero::zero();
             let mut amount_to_add = trade.amount_sold / trade.rate;
 
             if !trade.transaction_fee.is_zero() {
@@ -84,8 +83,8 @@ impl Holdings {
 
                 let mut trade_to_add = Trade {
                     amount_sold: holding.amount,
-                    short_term: Some(dec!(0)),
-                    long_term: Some(dec!(0)),
+                    short_term: Some(Zero::zero()),
+                    long_term: Some(Zero::zero()),
                     date_acquired: Some(holding.date),
                     cost_basis: Some(holding.rate_in_fiat * holding.amount),
                     long_term_trade: Some(false),
@@ -140,9 +139,9 @@ mod tests {
     }
 
     fn calculate_info (trade: Trade, holdings: Holdings, currency: &String) -> Info {
-        let mut cost_basis = dec!(0);
-        let mut gain = dec!(0);
-        let mut proceeds = dec!(0);
+        let mut cost_basis = Zero::zero();
+        let mut gain = Zero::zero();
+        let mut proceeds = Zero::zero();
         let mut deducted_count = 0;
         let mut amount_left = trade.amount_sold;
 

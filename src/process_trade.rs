@@ -123,6 +123,7 @@ mod tests {
     use super::process_trade;
     use crate::method;
     use crate::mocks;
+    use crate::QUARTER_IN_MILLISECONDS;
     use rust_decimal::prelude::Zero;
     use rust_decimal_macros::*;
 
@@ -130,12 +131,11 @@ mod tests {
 
     #[test]
     fn single_short_term_trade() {
-        let holdings = mocks::mock_holdings(1, 10, Some(mocks::now_u64() - 30844800000), None);
+        let holdings = mocks::mock_holdings(1, 10, Some(mocks::now_u64() - QUARTER_IN_MILLISECONDS), None);
         let currency = holdings.0.keys().collect::<Vec<&String>>()[0];
         let mut trades = mocks::mock_trades(1, mocks::now_u64(), holdings.clone(), false);
         trades[0].amount_sold = holdings.0.get(currency).unwrap()[0].amount;
         trades[0].bought_currency = FIAT_CURRENCY.to_owned().clone();
-        trades[0].date = mocks::now_u64();
 
         let result = process_trade(
             holdings.clone(),

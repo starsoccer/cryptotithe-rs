@@ -1,4 +1,4 @@
-use crate::{holding, trade};
+use crate::{holding, trade, QUARTER_IN_MILLISECONDS};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use rust_decimal::prelude::{Decimal, FromPrimitive, ToPrimitive, Zero};
@@ -16,10 +16,6 @@ fn rand_string() -> String {
 
 fn rand_decimal() -> Decimal {
     Decimal::from_f64(thread_rng().gen()).unwrap()
-}
-
-fn rand_date() -> u64 {
-    date_in_range(None, None)
 }
 
 pub fn now_u64() -> u64 {
@@ -73,7 +69,7 @@ pub fn mock_holdings(
 
 pub fn mock_trades(
     amount: u32,
-    _starting_date: u64,
+    starting_date: u64,
     current_holdings: holding::Holdings,
     allow_overflow: bool,
 ) -> Vec<trade::Trade> {
@@ -104,7 +100,7 @@ pub fn mock_trades(
                 sold_currency: currency.clone(),
                 amount_sold,
                 rate: rand_decimal(),
-                date: rand_date(),
+                date: date_in_range(Some(starting_date), Some(now_u64() + QUARTER_IN_MILLISECONDS)),
                 exchange_id: rand_string(),
                 exchange: rand_string(),
                 id: rand_string(),

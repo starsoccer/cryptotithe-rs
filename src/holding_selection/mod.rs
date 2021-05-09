@@ -34,15 +34,14 @@ pub fn holding_selection(
     let mut amount_used = trade.amount_sold;
 
     while !amount_used.is_zero() {
-        if let Some(current_currency_holding) = holdings.0.get_mut(&trade.sold_currency) {
-            let selected_currency_holding_index = get_currency_holding::get_currency_holding(
-                current_currency_holding,
-                method,
-                trade.clone(),
-            );
-            let selected_currency_holding = current_currency_holding
-                .get_mut(selected_currency_holding_index)
-                .unwrap();
+        let current_currency_holding = holdings.0.get_mut(&trade.sold_currency).unwrap(); // replace this unwrap somehow
+        let selected_currency_holding_index = get_currency_holding::get_currency_holding(
+            current_currency_holding,
+            method,
+            trade.clone(),
+        );
+
+        if let Some(selected_currency_holding) = current_currency_holding.get_mut(selected_currency_holding_index) {
 
             let result =
                 check_currency_holding_amount(amount_used, selected_currency_holding.clone());

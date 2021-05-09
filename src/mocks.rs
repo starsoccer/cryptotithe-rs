@@ -92,7 +92,9 @@ pub fn mock_trades(
                     * dec!(100))
                 .to_u32()
                 .unwrap();
-                Decimal::from_u32(thread_rng().gen_range(0..max_per_trade)).unwrap()
+
+                let rand: u32 = thread_rng().gen_range(0..(max_per_trade + 1));
+                Decimal::from_u32(rand).unwrap() / dec!(100)
             };
 
             trades.push(trade::Trade {

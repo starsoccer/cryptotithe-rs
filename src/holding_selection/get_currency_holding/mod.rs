@@ -18,7 +18,6 @@ pub fn get_currency_holding(
     method: method::Method,
     trade: trade::Trade,
 ) -> usize {
-    //holdings.0.get_mut(&trade.sold_currency).unwrap();
     match method {
         method::Method::LTFO => {
             lowest_tax_first_out::lowest_tax_first_out(trade, currency_holdings)

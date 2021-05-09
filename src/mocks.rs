@@ -110,6 +110,7 @@ pub fn mock_trades(
                 id: rand_string(),
                 transaction_fee: Zero::zero(),
                 transaction_fee_currency: rand_string(),
+                fiat_rate: Some(rand_decimal()),
             });
         }
     }

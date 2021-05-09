@@ -1,11 +1,11 @@
 use arbitrary::{Arbitrary, Result as ArbitraryResult, Unstructured};
 use rust_decimal::prelude::{Decimal, FromPrimitive};
 use serde::{Deserialize, Serialize};
+use rust_decimal_macros::*;
 
 mod trade_with_cost_basis;
-mod trade_with_fiat_rate;
 
-pub use {trade_with_cost_basis::*, trade_with_fiat_rate::*};
+pub use {trade_with_cost_basis::*};
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Trade {
@@ -26,6 +26,14 @@ pub struct Trade {
     pub transaction_fee: Decimal,
     #[serde(rename = "transactionFeeCurrency")]
     pub transaction_fee_currency: String,
+    #[serde(rename = "fiatRate")]
+    pub fiat_rate: Option<Decimal>,
+}
+
+impl Trade {
+    pub fn fiat_rate(&self) -> Decimal {
+        self.fiat_rate.unwrap_or_else(|| dec!(0))
+    }
 }
 
 impl Arbitrary<'_> for Trade {
@@ -41,23 +49,7 @@ impl Arbitrary<'_> for Trade {
             id: String::arbitrary(u)?,
             transaction_fee: Decimal::from_f64(f64::arbitrary(u)?).unwrap(),
             transaction_fee_currency: String::arbitrary(u)?,
+            fiat_rate: None,
         })
-    }
-}
-
-impl From<TradeWithFiatRate> for Trade {
-    fn from(trade: TradeWithFiatRate) -> Self {
-        Self {
-            bought_currency: trade.bought_currency,
-            sold_currency: trade.sold_currency,
-            amount_sold: trade.amount_sold,
-            rate: trade.rate,
-            date: trade.date,
-            exchange_id: trade.exchange_id,
-            exchange: trade.exchange,
-            id: trade.id,
-            transaction_fee: trade.transaction_fee,
-            transaction_fee_currency: trade.transaction_fee_currency,
-        }
     }
 }

@@ -1,7 +1,7 @@
 use crate::holding::Holdings;
 use crate::holding_selection::holding_selection;
 use crate::method::Method;
-use crate::trade::{TradeWithCostBasis, TradeWithFiatRate};
+use crate::trade::{Trade, TradeWithCostBasis};
 use crate::{MIN_HOLDING_SIZE, YEAR_IN_MILLISECONDS};
 use rust_decimal::prelude::{Decimal, Zero};
 use rust_decimal_macros::*;
@@ -19,7 +19,7 @@ pub struct ProcessedTradeResult {
 
 pub fn process_trade(
     original_holdings: Holdings,
-    trade: TradeWithFiatRate,
+    trade: Trade,
     fiat_currency: String,
     method: Method,
 ) -> ProcessedTradeResult {
@@ -35,7 +35,7 @@ pub fn process_trade(
 
     let result = holding_selection(
         holdings,
-        trade.clone().into(),
+        trade.clone(),
         fiat_currency.clone(),
         method,
     );
@@ -43,9 +43,9 @@ pub fn process_trade(
 
     if trade.sold_currency == fiat_currency {
         holdings = holdings.add_to_currency_holdings(
-            trade.bought_currency,
+            trade.bought_currency.clone(),
             trade.amount_sold / trade.rate,
-            trade.fiat_rate,
+            trade.fiat_rate(),
             trade.date,
             Some(trade.exchange),
         );
@@ -55,14 +55,14 @@ pub fn process_trade(
 
         if !trade.transaction_fee.is_zero() {
             if trade.transaction_fee_currency == trade.bought_currency {
-                fee_fiat_cost += trade.transaction_fee * trade.rate * trade.fiat_rate;
+                fee_fiat_cost += trade.transaction_fee * trade.rate * trade.fiat_rate();
                 amount_to_add -= trade.transaction_fee;
             } else if trade.transaction_fee_currency == trade.sold_currency {
-                fee_fiat_cost += trade.transaction_fee * trade.fiat_rate;
+                fee_fiat_cost += trade.transaction_fee * trade.fiat_rate();
                 amount_to_add -= trade.transaction_fee / trade.rate;
             } else if trade.transaction_fee_currency == fiat_currency {
                 fee_fiat_cost += trade.transaction_fee;
-                amount_to_add -= trade.transaction_fee / trade.fiat_rate;
+                amount_to_add -= trade.transaction_fee / trade.fiat_rate();
             }
         }
 
@@ -70,14 +70,14 @@ pub fn process_trade(
             holdings = holdings.add_to_currency_holdings(
                 trade.bought_currency.clone(),
                 amount_to_add,
-                trade.fiat_rate * trade.rate,
+                trade.fiat_rate() * trade.rate,
                 trade.date,
                 Some(trade.exchange.clone()),
             );
         }
 
         for holding in result.deducted_holdings {
-            let mut gain = (trade.fiat_rate - holding.rate_in_fiat) * holding.amount;
+            let mut gain = (trade.fiat_rate() - holding.rate_in_fiat) * holding.amount;
 
             if !fee_fiat_cost.is_zero() {
                 let fee_cost = holding.amount / trade.amount_sold * fee_fiat_cost;
@@ -91,7 +91,7 @@ pub fn process_trade(
                 date_acquired: holding.date,
                 cost_basis: holding.rate_in_fiat * holding.amount,
                 long_term_trade: false,
-                fiat_rate: trade.fiat_rate,
+                fiat_rate: trade.fiat_rate(),
                 bought_currency: trade.bought_currency.clone(),
                 sold_currency: trade.sold_currency.clone(),
                 rate: trade.rate,
@@ -136,7 +136,7 @@ pub fn process_trade(
 mod tests {
     use super::process_trade;
     use crate::mocks;
-    use crate::trade::TradeWithFiatRate;
+    use crate::trade::Trade;
     use crate::method;
     use rust_decimal::prelude::Zero;
     use rust_decimal_macros::*;
@@ -150,30 +150,18 @@ mod tests {
         let mut trades = mocks::mock_trades(1, mocks::now_u64(), holdings.clone(), false);
         trades[0].amount_sold = holdings.0.get(currency).unwrap()[0].amount;
         trades[0].bought_currency = FIAT_CURRENCY.to_owned().clone();
-        let trade = TradeWithFiatRate {
-            bought_currency: trades[0].bought_currency.clone(),
-            sold_currency: trades[0].sold_currency.clone(),
-            amount_sold: trades[0].amount_sold,
-            rate: trades[0].rate,
-            date: mocks::now_u64(),
-            exchange_id: trades[0].exchange_id.clone(),
-            exchange: trades[0].exchange.clone(),
-            id: trades[0].id.clone(),
-            transaction_fee: dec!(0),
-            transaction_fee_currency: trades[0].transaction_fee_currency.clone(),
-            fiat_rate: dec!(5),
-        };
+        trades[0].date = mocks::now_u64();
 
         let result = process_trade(
             holdings.clone(),
-            trade.clone(),
+            trades[0].clone(),
             FIAT_CURRENCY.to_string(),
             method::Method::FIFO,
         );
 
         let mut cost_basis = dec!(0);
         let mut gain = dec!(0);
-        let mut amount_left = trade.amount_sold;
+        let mut amount_left = trades[0].amount_sold;
         let mut deducted_count = 0;
         for currency_holding in holdings
             .0
@@ -184,25 +172,26 @@ mod tests {
             if currency_holding.amount > amount_left {
                 amount_left -= currency_holding.amount;
                 cost_basis += currency_holding.rate_in_fiat * currency_holding.amount;
-                gain += (trade.fiat_rate - currency_holding.rate_in_fiat) * currency_holding.amount;
+                gain += (trades[0].fiat_rate() - currency_holding.rate_in_fiat) * currency_holding.amount;
             // todo add test with fee
             } else {
                 cost_basis += currency_holding.rate_in_fiat * amount_left;
-                gain += (trade.fiat_rate - currency_holding.rate_in_fiat) * amount_left; // todo add test with fee
+                gain += (trades[0].fiat_rate() - currency_holding.rate_in_fiat) * amount_left; // todo add test with fee
                 break;
             }
         }
 
         assert_ne!(result.holdings, holdings);
+        assert!(result.long_term_proceeds.is_zero());
+        assert!(result.long_term_cost_basis.is_zero());
+        assert!(result.long_term_gain.is_zero());
+
         assert_eq!(result.cost_basis_trades.len(), deducted_count);
         assert_eq!(result.short_term_gain, gain);
         assert_eq!(result.short_term_cost_basis, cost_basis);
         assert_eq!(
             result.short_term_proceeds,
-            trade.amount_sold * trade.fiat_rate
+            trades[0].amount_sold * trades[0].fiat_rate()
         );
-        assert!(result.long_term_proceeds.is_zero());
-        assert!(result.long_term_cost_basis.is_zero());
-        assert!(result.long_term_gain.is_zero());
     }
 }

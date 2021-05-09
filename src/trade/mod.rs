@@ -44,3 +44,20 @@ impl Arbitrary<'_> for Trade {
         })
     }
 }
+
+impl From<TradeWithFiatRate> for Trade {
+    fn from(trade: TradeWithFiatRate) -> Self {
+        Self {
+            bought_currency: trade.bought_currency,
+            sold_currency: trade.sold_currency,
+            amount_sold: trade.amount_sold,
+            rate: trade.rate,
+            date: trade.date,
+            exchange_id: trade.exchange_id,
+            exchange: trade.exchange,
+            id: trade.id,
+            transaction_fee: trade.transaction_fee,
+            transaction_fee_currency: trade.transaction_fee_currency,
+        }
+    }
+}

@@ -39,3 +39,44 @@ impl Holdings {
         self
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::mocks;
+    use rust_decimal_macros::*;
+
+    #[test]
+    fn add_new_curreny_holding() {
+        let holdings = mocks::mock_holdings(0, 0, None, None);
+        assert_eq!(holdings.0.keys().len(), 0);
+
+        let currency = "BTC";
+        let new_holdings =
+            holdings.add_to_currency_holdings(currency.to_string(), dec!(0), dec!(0), 1234, None);
+
+        assert_eq!(new_holdings.0.keys().len(), 1);
+    }
+
+    #[test]
+    fn add_to_existing_curreny_holding() {
+        let holdings = mocks::mock_holdings(1, 3, None, None);
+        let holdings_currencies = holdings.0.keys().collect::<Vec<&String>>();
+        let currency = holdings_currencies[0].clone();
+        assert_eq!(holdings_currencies.len(), 1);
+
+        let new_holdings = holdings.add_to_currency_holdings(
+            currency.to_string(),
+            dec!(0),
+            dec!(0),
+            1234,
+            None,
+        );
+
+        assert_eq!(new_holdings.0.keys().len(), 1);
+        let currency_holding = new_holdings
+            .0
+            .get(&currency)
+            .expect("Unable to get currency holding");
+        assert_eq!(currency_holding.len(), 4);
+    }
+}

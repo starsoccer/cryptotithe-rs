@@ -1,14 +1,14 @@
 use crate::holding::Holdings;
 use crate::holding_selection::holding_selection;
 use crate::method::Method;
-use crate::trade::{Trade, TradeWithCostBasis};
+use crate::trade::Trade;
 use crate::{MIN_HOLDING_SIZE, YEAR_IN_MILLISECONDS};
 use rust_decimal::prelude::{Decimal, Zero};
 use rust_decimal_macros::*;
 
 pub struct ProcessedTradeResult {
     pub holdings: Holdings,
-    pub cost_basis_trades: Vec<TradeWithCostBasis>,
+    pub cost_basis_trades: Vec<Trade>,
     pub short_term_gain: Decimal,
     pub long_term_gain: Decimal,
     pub short_term_cost_basis: Decimal,
@@ -30,15 +30,10 @@ pub fn process_trade(
     let mut long_term_proceeds = dec!(0);
     let mut long_term_cost_basis = dec!(0);
 
-    let mut trades_with_cost_basis: Vec<TradeWithCostBasis> = vec![];
+    let mut trades_with_cost_basis: Vec<Trade> = vec![];
     let mut holdings = original_holdings;
 
-    let result = holding_selection(
-        holdings,
-        trade.clone(),
-        fiat_currency.clone(),
-        method,
-    );
+    let result = holding_selection(holdings, trade.clone(), fiat_currency.clone(), method);
     holdings = result.new_holdings;
 
     if trade.sold_currency == fiat_currency {
@@ -84,36 +79,27 @@ pub fn process_trade(
                 gain -= fee_cost;
             }
 
-            let mut trade_to_add = TradeWithCostBasis {
+            let mut trade_to_add = Trade {
                 amount_sold: holding.amount,
-                short_term: dec!(0),
-                long_term: dec!(0),
-                date_acquired: holding.date,
-                cost_basis: holding.rate_in_fiat * holding.amount,
-                long_term_trade: false,
-                fiat_rate: trade.fiat_rate(),
-                bought_currency: trade.bought_currency.clone(),
-                sold_currency: trade.sold_currency.clone(),
-                rate: trade.rate,
-                date: trade.date,
-                exchange_id: trade.exchange_id.clone(), // shouldnt use same ID maybe
-                exchange: trade.exchange.clone(),
-                id: trade.id.clone(),                   // new ID maybe
-                transaction_fee: trade.transaction_fee, // divide fee across trades?
-                transaction_fee_currency: trade.transaction_fee_currency.clone(),
+                short_term: Some(dec!(0)),
+                long_term: Some(dec!(0)),
+                date_acquired: Some(holding.date),
+                cost_basis: Some(holding.rate_in_fiat * holding.amount),
+                long_term_trade: Some(false),
+                ..trade.clone()
             };
 
             if trade.date.wrapping_sub(holding.date) > YEAR_IN_MILLISECONDS {
-                trade_to_add.long_term_trade = true;
+                trade_to_add.long_term = Some(gain);
                 long_term_gain += gain;
-                long_term_proceeds += trade_to_add.fiat_rate * trade_to_add.amount_sold;
-                long_term_cost_basis += trade_to_add.cost_basis;
-                trade_to_add.long_term = gain;
+                long_term_proceeds += trade_to_add.fiat_rate() * trade_to_add.amount_sold;
+                long_term_cost_basis += trade_to_add.cost_basis();
+                trade_to_add.long_term_trade = Some(true);
             } else {
-                trade_to_add.short_term = gain;
+                trade_to_add.short_term = Some(gain);
                 short_term_gain += gain;
-                short_term_proceeds += trade_to_add.fiat_rate * trade_to_add.amount_sold;
-                short_term_cost_basis += trade_to_add.cost_basis;
+                short_term_proceeds += trade_to_add.fiat_rate() * trade_to_add.amount_sold;
+                short_term_cost_basis += trade_to_add.cost_basis();
             }
 
             trades_with_cost_basis.push(trade_to_add);
@@ -135,9 +121,8 @@ pub fn process_trade(
 #[cfg(test)]
 mod tests {
     use super::process_trade;
-    use crate::mocks;
-    use crate::trade::Trade;
     use crate::method;
+    use crate::mocks;
     use rust_decimal::prelude::Zero;
     use rust_decimal_macros::*;
 
@@ -172,7 +157,8 @@ mod tests {
             if currency_holding.amount > amount_left {
                 amount_left -= currency_holding.amount;
                 cost_basis += currency_holding.rate_in_fiat * currency_holding.amount;
-                gain += (trades[0].fiat_rate() - currency_holding.rate_in_fiat) * currency_holding.amount;
+                gain += (trades[0].fiat_rate() - currency_holding.rate_in_fiat)
+                    * currency_holding.amount;
             // todo add test with fee
             } else {
                 cost_basis += currency_holding.rate_in_fiat * amount_left;

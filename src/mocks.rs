@@ -111,6 +111,11 @@ pub fn mock_trades(
                 transaction_fee: Zero::zero(),
                 transaction_fee_currency: rand_string(),
                 fiat_rate: Some(rand_decimal()),
+                short_term: None,
+                long_term: None,
+                date_acquired: None,
+                cost_basis: None,
+                long_term_trade: None,
             });
         }
     }

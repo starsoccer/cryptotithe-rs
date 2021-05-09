@@ -3,8 +3,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub mod add_to_currency_holdings;
+pub mod process_trade;
 
-pub use {add_to_currency_holdings::*};
+pub use {add_to_currency_holdings::*, process_trade::*};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct CurrencyHolding {

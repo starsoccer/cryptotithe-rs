@@ -18,110 +18,112 @@ pub struct ProcessedTradeResult {
     pub long_term_proceeds: Decimal,
 }
 
-pub fn process_trade(
-    original_holdings: Holdings,
-    trade: Trade,
-    fiat_currency: String,
-    method: Method,
-) -> ProcessedTradeResult {
-    let mut short_term_gain = dec!(0);
-    let mut short_term_proceeds = dec!(0);
-    let mut short_term_cost_basis = dec!(0);
-    let mut long_term_gain = dec!(0);
-    let mut long_term_proceeds = dec!(0);
-    let mut long_term_cost_basis = dec!(0);
+impl Holdings {
 
-    let mut trades_with_cost_basis: Vec<Trade> = vec![];
-    let mut holdings = original_holdings;
+    pub fn process_trade(
+        self: Holdings,
+        trade: Trade,
+        fiat_currency: String,
+        method: Method,
+    ) -> ProcessedTradeResult {
+        let mut short_term_gain = dec!(0);
+        let mut short_term_proceeds = dec!(0);
+        let mut short_term_cost_basis = dec!(0);
+        let mut long_term_gain = dec!(0);
+        let mut long_term_proceeds = dec!(0);
+        let mut long_term_cost_basis = dec!(0);
 
-    let result = holding_selection(holdings, trade.clone(), fiat_currency.clone(), method);
-    holdings = result.new_holdings;
+        let mut trades_with_cost_basis: Vec<Trade> = vec![];
+        let mut holdings = self;
 
-    if trade.sold_currency == fiat_currency {
-        holdings = holdings.add_to_currency_holdings(
-            trade.bought_currency.clone(),
-            trade.amount_sold / trade.rate,
-            trade.fiat_rate(),
-            trade.date,
-            Some(trade.exchange),
-        );
-    } else {
-        let mut fee_fiat_cost = dec!(0);
-        let mut amount_to_add = trade.amount_sold / trade.rate;
+        let result = holding_selection(holdings, trade.clone(), fiat_currency.clone(), method);
+        holdings = result.new_holdings;
 
-        if !trade.transaction_fee.is_zero() {
-            if trade.transaction_fee_currency == trade.bought_currency {
-                fee_fiat_cost += trade.transaction_fee * trade.rate * trade.fiat_rate();
-                amount_to_add -= trade.transaction_fee;
-            } else if trade.transaction_fee_currency == trade.sold_currency {
-                fee_fiat_cost += trade.transaction_fee * trade.fiat_rate();
-                amount_to_add -= trade.transaction_fee / trade.rate;
-            } else if trade.transaction_fee_currency == fiat_currency {
-                fee_fiat_cost += trade.transaction_fee;
-                amount_to_add -= trade.transaction_fee / trade.fiat_rate();
-            }
-        }
-
-        if amount_to_add > MIN_HOLDING_SIZE {
+        if trade.sold_currency == fiat_currency {
             holdings = holdings.add_to_currency_holdings(
                 trade.bought_currency.clone(),
-                amount_to_add,
-                trade.fiat_rate() * trade.rate,
+                trade.amount_sold / trade.rate,
+                trade.fiat_rate(),
                 trade.date,
-                Some(trade.exchange.clone()),
+                Some(trade.exchange),
             );
-        }
+        } else {
+            let mut fee_fiat_cost = dec!(0);
+            let mut amount_to_add = trade.amount_sold / trade.rate;
 
-        for holding in result.deducted_holdings {
-            let mut gain = (trade.fiat_rate() - holding.rate_in_fiat) * holding.amount;
-
-            if !fee_fiat_cost.is_zero() {
-                let fee_cost = holding.amount / trade.amount_sold * fee_fiat_cost;
-                gain -= fee_cost;
+            if !trade.transaction_fee.is_zero() {
+                if trade.transaction_fee_currency == trade.bought_currency {
+                    fee_fiat_cost += trade.transaction_fee * trade.rate * trade.fiat_rate();
+                    amount_to_add -= trade.transaction_fee;
+                } else if trade.transaction_fee_currency == trade.sold_currency {
+                    fee_fiat_cost += trade.transaction_fee * trade.fiat_rate();
+                    amount_to_add -= trade.transaction_fee / trade.rate;
+                } else if trade.transaction_fee_currency == fiat_currency {
+                    fee_fiat_cost += trade.transaction_fee;
+                    amount_to_add -= trade.transaction_fee / trade.fiat_rate();
+                }
             }
 
-            let mut trade_to_add = Trade {
-                amount_sold: holding.amount,
-                short_term: Some(dec!(0)),
-                long_term: Some(dec!(0)),
-                date_acquired: Some(holding.date),
-                cost_basis: Some(holding.rate_in_fiat * holding.amount),
-                long_term_trade: Some(false),
-                ..trade.clone()
-            };
-
-            if trade.date.wrapping_sub(holding.date) > YEAR_IN_MILLISECONDS {
-                trade_to_add.long_term = Some(gain);
-                long_term_gain += gain;
-                long_term_proceeds += trade_to_add.fiat_rate() * trade_to_add.amount_sold;
-                long_term_cost_basis += trade_to_add.cost_basis();
-                trade_to_add.long_term_trade = Some(true);
-            } else {
-                trade_to_add.short_term = Some(gain);
-                short_term_gain += gain;
-                short_term_proceeds += trade_to_add.fiat_rate() * trade_to_add.amount_sold;
-                short_term_cost_basis += trade_to_add.cost_basis();
+            if amount_to_add > MIN_HOLDING_SIZE {
+                holdings = holdings.add_to_currency_holdings(
+                    trade.bought_currency.clone(),
+                    amount_to_add,
+                    trade.fiat_rate() * trade.rate,
+                    trade.date,
+                    Some(trade.exchange.clone()),
+                );
             }
 
-            trades_with_cost_basis.push(trade_to_add);
-        }
-    }
+            for holding in result.deducted_holdings {
+                let mut gain = (trade.fiat_rate() - holding.rate_in_fiat) * holding.amount;
 
-    ProcessedTradeResult {
-        holdings,
-        cost_basis_trades: trades_with_cost_basis,
-        short_term_gain,
-        long_term_gain,
-        short_term_cost_basis,
-        long_term_cost_basis,
-        short_term_proceeds,
-        long_term_proceeds,
+                if !fee_fiat_cost.is_zero() {
+                    let fee_cost = holding.amount / trade.amount_sold * fee_fiat_cost;
+                    gain -= fee_cost;
+                }
+
+                let mut trade_to_add = Trade {
+                    amount_sold: holding.amount,
+                    short_term: Some(dec!(0)),
+                    long_term: Some(dec!(0)),
+                    date_acquired: Some(holding.date),
+                    cost_basis: Some(holding.rate_in_fiat * holding.amount),
+                    long_term_trade: Some(false),
+                    ..trade.clone()
+                };
+
+                if trade.date.wrapping_sub(holding.date) > YEAR_IN_MILLISECONDS {
+                    trade_to_add.long_term = Some(gain);
+                    long_term_gain += gain;
+                    long_term_proceeds += trade_to_add.fiat_rate() * trade_to_add.amount_sold;
+                    long_term_cost_basis += trade_to_add.cost_basis();
+                    trade_to_add.long_term_trade = Some(true);
+                } else {
+                    trade_to_add.short_term = Some(gain);
+                    short_term_gain += gain;
+                    short_term_proceeds += trade_to_add.fiat_rate() * trade_to_add.amount_sold;
+                    short_term_cost_basis += trade_to_add.cost_basis();
+                }
+
+                trades_with_cost_basis.push(trade_to_add);
+            }
+        }
+
+        ProcessedTradeResult {
+            holdings,
+            cost_basis_trades: trades_with_cost_basis,
+            short_term_gain,
+            long_term_gain,
+            short_term_cost_basis,
+            long_term_cost_basis,
+            short_term_proceeds,
+            long_term_proceeds,
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::process_trade;
     use crate::method;
     use crate::mocks;
     use crate::{QUARTER_IN_MILLISECONDS, YEAR_IN_MILLISECONDS, trade::Trade, holding::Holdings};
@@ -176,21 +178,21 @@ mod tests {
     #[test]
     fn short_term_trade_single_holdings() {
         let holdings = mocks::mock_holdings(1, 10, Some(mocks::now_u64() - QUARTER_IN_MILLISECONDS), None);
-        let currency = holdings.0.keys().collect::<Vec<&String>>()[0];
+        let original_holdings = holdings.clone();
+        let currency = original_holdings.0.keys().collect::<Vec<&String>>()[0];
         let mut trades = mocks::mock_trades(1, mocks::now_u64(), holdings.clone(), false);
         trades[0].amount_sold = holdings.0.get(currency).unwrap()[0].amount;
         trades[0].bought_currency = FIAT_CURRENCY.to_owned().clone();
 
-        let result = process_trade(
-            holdings.clone(),
+        let result = holdings.process_trade(
             trades[0].clone(),
             FIAT_CURRENCY.to_string(),
             method::Method::FIFO,
         );
 
-        let info = calculate_info(trades[0].clone(), holdings.clone(), currency);
+        let info = calculate_info(trades[0].clone(), original_holdings.clone(), currency);
 
-        assert_ne!(result.holdings, holdings);
+        assert_ne!(result.holdings, original_holdings);
         assert!(result.long_term_proceeds.is_zero());
         assert!(result.long_term_cost_basis.is_zero());
         assert!(result.long_term_gain.is_zero());
@@ -207,21 +209,21 @@ mod tests {
     #[test]
     fn short_term_trade_multiple_holdings() {
         let holdings = mocks::mock_holdings(1, 10, Some(mocks::now_u64() - QUARTER_IN_MILLISECONDS), None);
-        let currency = holdings.0.keys().collect::<Vec<&String>>()[0];
+        let original_holdings = holdings.clone();
+        let currency = original_holdings.0.keys().collect::<Vec<&String>>()[0];
         let mut trades = mocks::mock_trades(1, mocks::now_u64(), holdings.clone(), false);
         trades[0].amount_sold = holdings.0.get(currency).unwrap()[0].amount * dec!(2);
         trades[0].bought_currency = FIAT_CURRENCY.to_owned().clone();
 
-        let result = process_trade(
-            holdings.clone(),
+        let result = holdings.process_trade(
             trades[0].clone(),
             FIAT_CURRENCY.to_string(),
             method::Method::FIFO,
         );
 
-        let info = calculate_info(trades[0].clone(), holdings.clone(), currency);
+        let info = calculate_info(trades[0].clone(), original_holdings.clone(), currency);
 
-        assert_ne!(result.holdings, holdings);
+        assert_ne!(result.holdings, original_holdings);
         assert!(result.long_term_proceeds.is_zero());
         assert!(result.long_term_cost_basis.is_zero());
         assert!(result.long_term_gain.is_zero());
@@ -235,21 +237,21 @@ mod tests {
     #[test]
     fn long_term_trade_single_holdings() {
         let holdings = mocks::mock_holdings(1, 10, None, Some(mocks::now_u64() - YEAR_IN_MILLISECONDS));
-        let currency = holdings.0.keys().collect::<Vec<&String>>()[0];
+        let original_holdings = holdings.clone();
+        let currency = original_holdings.0.keys().collect::<Vec<&String>>()[0];
         let mut trades = mocks::mock_trades(1, mocks::now_u64(), holdings.clone(), false);
         trades[0].amount_sold = holdings.0.get(currency).unwrap()[0].amount;
         trades[0].bought_currency = FIAT_CURRENCY.to_owned().clone();
 
-        let result = process_trade(
-            holdings.clone(),
+        let result = holdings.process_trade(
             trades[0].clone(),
             FIAT_CURRENCY.to_string(),
             method::Method::FIFO,
         );
 
-        let info = calculate_info(trades[0].clone(), holdings.clone(), currency);
+        let info = calculate_info(trades[0].clone(), original_holdings.clone(), currency);
 
-        assert_ne!(result.holdings, holdings);
+        assert_ne!(result.holdings, original_holdings);
         assert!(result.short_term_gain.is_zero());
         assert!(result.short_term_cost_basis.is_zero());
         assert!(result.short_term_gain.is_zero());
@@ -263,21 +265,21 @@ mod tests {
     #[test]
     fn long_term_trade_multiple_holdings() {
         let holdings = mocks::mock_holdings(1, 10, None, Some(mocks::now_u64() - YEAR_IN_MILLISECONDS));
-        let currency = holdings.0.keys().collect::<Vec<&String>>()[0];
+        let original_holdings = holdings.clone();
+        let currency = original_holdings.0.keys().collect::<Vec<&String>>()[0];
         let mut trades = mocks::mock_trades(1, mocks::now_u64(), holdings.clone(), false);
         trades[0].amount_sold = holdings.0.get(currency).unwrap()[0].amount * dec!(2);
         trades[0].bought_currency = FIAT_CURRENCY.to_owned().clone();
 
-        let result = process_trade(
-            holdings.clone(),
+        let result = holdings.process_trade(
             trades[0].clone(),
             FIAT_CURRENCY.to_string(),
             method::Method::FIFO,
         );
 
-        let info = calculate_info(trades[0].clone(), holdings.clone(), currency);
+        let info = calculate_info(trades[0].clone(), original_holdings.clone(), currency);
 
-        assert_ne!(result.holdings, holdings);
+        assert_ne!(result.holdings, original_holdings);
         assert!(result.short_term_gain.is_zero());
         assert!(result.short_term_cost_basis.is_zero());
         assert!(result.short_term_gain.is_zero());
@@ -291,6 +293,7 @@ mod tests {
     #[test]
     fn short_long_term_trade_multiple_holdings() {
         let mut holdings = mocks::mock_holdings(1, 10, None, Some(mocks::now_u64() - YEAR_IN_MILLISECONDS));
+        let original_holdings = holdings.clone();
         let currency = holdings.0.keys().collect::<Vec<&String>>()[0].clone();
         let currency_holdings = holdings.0.get_mut(&currency).unwrap();
         currency_holdings[0].date = mocks::now_u64() - QUARTER_IN_MILLISECONDS;
@@ -299,16 +302,15 @@ mod tests {
         trades[0].amount_sold = holdings.0.get(&currency).unwrap()[0].amount * dec!(2);
         trades[0].bought_currency = FIAT_CURRENCY.to_owned().clone();
 
-        let result = process_trade(
-            holdings.clone(),
+        let result = &holdings.process_trade(
             trades[0].clone(),
             FIAT_CURRENCY.to_string(),
             method::Method::FIFO,
         );
 
-        let info = calculate_info(trades[0].clone(), holdings.clone(), &currency);
+        let info = calculate_info(trades[0].clone(), original_holdings.clone(), &currency);
 
-        assert_ne!(result.holdings, holdings);
+        assert_ne!(result.holdings, original_holdings);
 
         assert!(!result.short_term_cost_basis.is_zero());
         assert!(!result.short_term_gain.is_zero());

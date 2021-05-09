@@ -1,4 +1,4 @@
-use crate::holding::Holdings;
+use crate::holding::{Holdings};
 use crate::holding_selection::holding_selection;
 use crate::method::Method;
 use crate::trade::Trade;

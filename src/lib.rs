@@ -1,7 +1,6 @@
 use rust_decimal::prelude::Decimal;
 use rust_decimal_macros::*;
 
-pub mod add_to_holdings;
 pub mod holding;
 pub mod holding_selection;
 pub mod method;

@@ -1,8 +1,8 @@
 use rust_decimal::prelude::Decimal;
 use rust_decimal_macros::*;
 
-pub mod calculate_gains;
 pub mod calculate_gain_per_trade;
+pub mod calculate_gains;
 pub mod holding;
 pub mod holding_selection;
 pub mod income;

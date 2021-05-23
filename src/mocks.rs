@@ -77,7 +77,7 @@ pub fn mock_trades(
     let currencies = {
         let keys = current_holdings.0.keys().cloned().collect::<Vec<String>>();
         if keys.is_empty() {
-            vec!(rand_string())
+            vec![rand_string()]
         } else {
             keys
         }
@@ -109,7 +109,10 @@ pub fn mock_trades(
                 sold_currency: currency.clone(),
                 amount_sold,
                 rate: rand_decimal(),
-                date: date_in_range(Some(starting_date), Some(now_u64() + QUARTER_IN_MILLISECONDS)),
+                date: date_in_range(
+                    Some(starting_date),
+                    Some(now_u64() + QUARTER_IN_MILLISECONDS),
+                ),
                 exchange_id: rand_string(),
                 exchange: rand_string(),
                 id: rand_string(),

@@ -1,4 +1,4 @@
-use crate::holding::{Holdings, CurrencyHolding};
+use crate::holding::{CurrencyHolding, Holdings};
 use rust_decimal::prelude::Decimal;
 
 impl Holdings {
@@ -38,8 +38,13 @@ mod tests {
         assert_eq!(holdings.0.keys().len(), 0);
 
         let currency = "BTC";
-        let new_holdings =
-            holdings.add_to_currency_holdings(currency.to_string(), Zero::zero(), Zero::zero(), 1234, None);
+        let new_holdings = holdings.add_to_currency_holdings(
+            currency.to_string(),
+            Zero::zero(),
+            Zero::zero(),
+            1234,
+            None,
+        );
 
         assert_eq!(new_holdings.0.keys().len(), 1);
     }

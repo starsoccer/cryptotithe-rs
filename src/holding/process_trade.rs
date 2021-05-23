@@ -1,4 +1,4 @@
-use crate::holding::{Holdings};
+use crate::holding::Holdings;
 use crate::holding_selection::holding_selection;
 use crate::method::Method;
 use crate::trade::Trade;
@@ -18,7 +18,6 @@ pub struct ProcessedTradeResult {
 }
 
 impl Holdings {
-
     pub fn process_trade(
         self: Holdings,
         trade: Trade,
@@ -125,7 +124,7 @@ impl Holdings {
 mod tests {
     use crate::method;
     use crate::mocks;
-    use crate::{QUARTER_IN_MILLISECONDS, YEAR_IN_MILLISECONDS, trade::Trade, holding::Holdings};
+    use crate::{holding::Holdings, trade::Trade, QUARTER_IN_MILLISECONDS, YEAR_IN_MILLISECONDS};
     use rust_decimal::prelude::{Decimal, Zero};
     use rust_decimal_macros::*;
 
@@ -138,7 +137,7 @@ mod tests {
         deducted_count: usize,
     }
 
-    fn calculate_info (trade: Trade, holdings: Holdings, currency: &String) -> Info {
+    fn calculate_info(trade: Trade, holdings: Holdings, currency: &String) -> Info {
         let mut cost_basis = Zero::zero();
         let mut gain = Zero::zero();
         let mut proceeds = Zero::zero();
@@ -154,8 +153,8 @@ mod tests {
             if amount_left > currency_holding.amount {
                 amount_left -= currency_holding.amount;
                 cost_basis += currency_holding.rate_in_fiat * currency_holding.amount;
-                gain += (trade.fiat_rate() - currency_holding.rate_in_fiat)
-                    * currency_holding.amount;
+                gain +=
+                    (trade.fiat_rate() - currency_holding.rate_in_fiat) * currency_holding.amount;
                 proceeds += currency_holding.amount * trade.fiat_rate();
                 // todo add test with fee
             } else {
@@ -171,12 +170,17 @@ mod tests {
             gain,
             proceeds,
             deducted_count,
-        } 
+        }
     }
-    
+
     #[test]
     fn short_term_trade_single_holdings() {
-        let holdings = mocks::mock_holdings(1, 10, Some(mocks::now_u64() - QUARTER_IN_MILLISECONDS), None);
+        let holdings = mocks::mock_holdings(
+            1,
+            10,
+            Some(mocks::now_u64() - QUARTER_IN_MILLISECONDS),
+            None,
+        );
         let original_holdings = holdings.clone();
         let currency = original_holdings.0.keys().collect::<Vec<&String>>()[0];
         let mut trades = mocks::mock_trades(1, mocks::now_u64(), holdings.clone(), false);
@@ -199,15 +203,17 @@ mod tests {
         assert_eq!(result.cost_basis_trades.len(), info.deducted_count);
         assert_eq!(result.short_term_gain, info.gain);
         assert_eq!(result.short_term_cost_basis, info.cost_basis);
-        assert_eq!(
-            result.short_term_proceeds,
-            info.proceeds
-        );
+        assert_eq!(result.short_term_proceeds, info.proceeds);
     }
 
     #[test]
     fn short_term_trade_multiple_holdings() {
-        let holdings = mocks::mock_holdings(1, 10, Some(mocks::now_u64() - QUARTER_IN_MILLISECONDS), None);
+        let holdings = mocks::mock_holdings(
+            1,
+            10,
+            Some(mocks::now_u64() - QUARTER_IN_MILLISECONDS),
+            None,
+        );
         let original_holdings = holdings.clone();
         let currency = original_holdings.0.keys().collect::<Vec<&String>>()[0];
         let mut trades = mocks::mock_trades(1, mocks::now_u64(), holdings.clone(), false);
@@ -235,7 +241,8 @@ mod tests {
 
     #[test]
     fn long_term_trade_single_holdings() {
-        let holdings = mocks::mock_holdings(1, 10, None, Some(mocks::now_u64() - YEAR_IN_MILLISECONDS));
+        let holdings =
+            mocks::mock_holdings(1, 10, None, Some(mocks::now_u64() - YEAR_IN_MILLISECONDS));
         let original_holdings = holdings.clone();
         let currency = original_holdings.0.keys().collect::<Vec<&String>>()[0];
         let mut trades = mocks::mock_trades(1, mocks::now_u64(), holdings.clone(), false);
@@ -263,7 +270,8 @@ mod tests {
 
     #[test]
     fn long_term_trade_multiple_holdings() {
-        let holdings = mocks::mock_holdings(1, 10, None, Some(mocks::now_u64() - YEAR_IN_MILLISECONDS));
+        let holdings =
+            mocks::mock_holdings(1, 10, None, Some(mocks::now_u64() - YEAR_IN_MILLISECONDS));
         let original_holdings = holdings.clone();
         let currency = original_holdings.0.keys().collect::<Vec<&String>>()[0];
         let mut trades = mocks::mock_trades(1, mocks::now_u64(), holdings.clone(), false);
@@ -291,7 +299,8 @@ mod tests {
 
     #[test]
     fn short_long_term_trade_multiple_holdings() {
-        let mut holdings = mocks::mock_holdings(1, 10, None, Some(mocks::now_u64() - YEAR_IN_MILLISECONDS));
+        let mut holdings =
+            mocks::mock_holdings(1, 10, None, Some(mocks::now_u64() - YEAR_IN_MILLISECONDS));
         let original_holdings = holdings.clone();
         let currency = holdings.0.keys().collect::<Vec<&String>>()[0].clone();
         let currency_holdings = holdings.0.get_mut(&currency).unwrap();
@@ -321,7 +330,13 @@ mod tests {
 
         assert_eq!(result.cost_basis_trades.len(), info.deducted_count);
         assert_eq!(result.long_term_gain + result.short_term_gain, info.gain);
-        assert_eq!(result.long_term_cost_basis + result.short_term_cost_basis, info.cost_basis);
-        assert_eq!(result.long_term_proceeds + result.short_term_proceeds, info.proceeds);
+        assert_eq!(
+            result.long_term_cost_basis + result.short_term_cost_basis,
+            info.cost_basis
+        );
+        assert_eq!(
+            result.long_term_proceeds + result.short_term_proceeds,
+            info.proceeds
+        );
     }
 }

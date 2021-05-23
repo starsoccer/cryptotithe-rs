@@ -41,21 +41,24 @@ pub fn holding_selection(
                     method,
                     trade.clone(),
                 );
-        
-                if let Some(selected_currency_holding) = current_currency_holding.get_mut(selected_currency_holding_index) {
-        
-                    let result =
-                        check_currency_holding_amount(amount_used, selected_currency_holding.clone());
+
+                if let Some(selected_currency_holding) =
+                    current_currency_holding.get_mut(selected_currency_holding_index)
+                {
+                    let result = check_currency_holding_amount(
+                        amount_used,
+                        selected_currency_holding.clone(),
+                    );
                     currency_holding.push(result.deducted_currency_holding);
-        
+
                     if result.amount_remaining.is_zero() {
                         selected_currency_holding.amount -= amount_used;
                     } else {
                         current_currency_holding.remove(selected_currency_holding_index);
                     }
-        
+
                     amount_used = result.amount_remaining;
-        
+
                     if currency_holding.is_empty() {
                         holdings.0.remove(&trade.sold_currency);
                     }
@@ -129,10 +132,10 @@ fn check_currency_holding_amount(
 #[cfg(test)]
 mod tests {
     use crate::mocks;
-    use std::collections::HashMap;
     use crate::{holding, holding_selection, method};
     use rust_decimal::prelude::{Decimal, Zero};
     use rust_decimal_macros::*;
+    use std::collections::HashMap;
 
     fn calculate_total_amount(currency_holdings: Vec<holding::CurrencyHolding>) -> Decimal {
         currency_holdings

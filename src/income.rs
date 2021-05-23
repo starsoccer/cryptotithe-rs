@@ -12,11 +12,11 @@ pub struct Income {
     pub fee: Option<Decimal>,
     pub date: u64,
     #[serde(rename = "fiatRate")]
-    pub fiat_rate: Option<Decimal>
+    pub fiat_rate: Option<Decimal>,
 }
 
 impl Income {
-    pub fn fiat_rate (self: Income) -> Decimal {
+    pub fn fiat_rate(self: Income) -> Decimal {
         self.fiat_rate.unwrap_or_else(Zero::zero)
     }
 }

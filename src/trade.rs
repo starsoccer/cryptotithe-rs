@@ -1,5 +1,5 @@
 use arbitrary::{Arbitrary, Result as ArbitraryResult, Unstructured};
-use rust_decimal::prelude::{Decimal, Zero, FromPrimitive};
+use rust_decimal::prelude::{Decimal, FromPrimitive, Zero};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]

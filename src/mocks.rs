@@ -74,11 +74,18 @@ pub fn mock_trades(
     allow_overflow: bool,
 ) -> Vec<trade::Trade> {
     let mut trades: Vec<trade::Trade> = vec![];
-    let currencies = current_holdings.0.keys().collect::<Vec<&String>>();
+    let currencies = {
+        let keys = current_holdings.0.keys().cloned().collect::<Vec<String>>();
+        if keys.is_empty() {
+            vec!(rand_string())
+        } else {
+            keys
+        }
+    };
 
     for currency in currencies {
         let a = Vec::new();
-        let currency_holdings = current_holdings.0.get(currency).unwrap_or(&a);
+        let currency_holdings = current_holdings.0.get(&currency).unwrap_or(&a);
         let total_holdings: Decimal = currency_holdings
             .iter()
             .fold(Zero::zero(), |acc, item| acc + item.amount);

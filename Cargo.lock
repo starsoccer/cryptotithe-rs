@@ -38,6 +38,7 @@ name = "cryptotithe"
 version = "0.0.1"
 dependencies = [
  "arbitrary",
+ "getrandom",
  "js-sys",
  "rand",
  "rust_decimal",
@@ -67,8 +68,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c9495705279e7140bf035dde1f6e750c162df8b625267cd52cc44e0b156732c8"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi",
+ "wasm-bindgen",
 ]
 
 [[package]]

@@ -13,10 +13,11 @@ crate-type = ["cdylib"]
 arbitrary = { version = "1.0.0", features = ["derive"] }
 strum = "0.20"
 strum_macros = "0.20"
-rust_decimal = "1.10.3"
+rust_decimal = { version = "1.10.3", features = ["serde-float"]}
 rust_decimal_macros = "1.10.3"
 wasm-bindgen = { version = "0.2.71", features = ["serde-serialize"] }
 serde = { version = "1.0.123", features = ["derive"] }
 web-sys = { version = "0.3.48", features = ["console"] } 
 js-sys = "0.3.48"
 rand = "0.8.0"
+getrandom = { version = "0.2.2", features = ["js"] }

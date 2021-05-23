@@ -34,31 +34,41 @@ pub fn holding_selection(
     let mut amount_used = trade.amount_sold;
 
     while !amount_used.is_zero() {
-        let current_currency_holding = holdings.0.get_mut(&trade.sold_currency).unwrap(); // replace this unwrap somehow
-        let selected_currency_holding_index = get_currency_holding::get_currency_holding(
-            current_currency_holding,
-            method,
-            trade.clone(),
-        );
-
-        if let Some(selected_currency_holding) = current_currency_holding.get_mut(selected_currency_holding_index) {
-
-            let result =
-                check_currency_holding_amount(amount_used, selected_currency_holding.clone());
-            currency_holding.push(result.deducted_currency_holding);
-
-            if result.amount_remaining.is_zero() {
-                selected_currency_holding.amount -= amount_used;
+        let result = {
+            if let Some(current_currency_holding) = holdings.0.get_mut(&trade.sold_currency) {
+                let selected_currency_holding_index = get_currency_holding::get_currency_holding(
+                    current_currency_holding,
+                    method,
+                    trade.clone(),
+                );
+        
+                if let Some(selected_currency_holding) = current_currency_holding.get_mut(selected_currency_holding_index) {
+        
+                    let result =
+                        check_currency_holding_amount(amount_used, selected_currency_holding.clone());
+                    currency_holding.push(result.deducted_currency_holding);
+        
+                    if result.amount_remaining.is_zero() {
+                        selected_currency_holding.amount -= amount_used;
+                    } else {
+                        current_currency_holding.remove(selected_currency_holding_index);
+                    }
+        
+                    amount_used = result.amount_remaining;
+        
+                    if currency_holding.is_empty() {
+                        holdings.0.remove(&trade.sold_currency);
+                    }
+                    Ok(true)
+                } else {
+                    Err("Currency holdings is empty")
+                }
             } else {
-                current_currency_holding.remove(selected_currency_holding_index);
+                Err("Currency holding not found")
             }
+        };
 
-            amount_used = result.amount_remaining;
-
-            if currency_holding.is_empty() {
-                holdings.0.remove(&trade.sold_currency);
-            }
-        } else {
+        if result.is_err() {
             if trade.sold_currency == fiat_currency {
                 currency_holding.push(holding::CurrencyHolding {
                     amount: amount_used,
@@ -119,6 +129,7 @@ fn check_currency_holding_amount(
 #[cfg(test)]
 mod tests {
     use crate::mocks;
+    use std::collections::HashMap;
     use crate::{holding, holding_selection, method};
     use rust_decimal::prelude::{Decimal, Zero};
     use rust_decimal_macros::*;
@@ -129,6 +140,25 @@ mod tests {
             .fold(Zero::zero(), |acc, item| acc + item.amount)
     }
     static FIAT_CURRENCY: &str = "FAKE";
+
+    #[test]
+    fn empty_holding() {
+        let holdings = holding::Holdings(HashMap::new());
+        let mut trades = mocks::mock_trades(1, 123456768, holdings.clone(), false);
+        trades[0].bought_currency = FIAT_CURRENCY.to_owned().clone();
+
+        let result = holding_selection::holding_selection(
+            holdings.clone(),
+            trades[0].clone(),
+            FIAT_CURRENCY.to_owned().clone(),
+            method::Method::FIFO,
+        );
+
+        assert_eq!(
+            calculate_total_amount(result.deducted_holdings),
+            trades[0].amount_sold
+        );
+    }
 
     #[test]
     fn single_holding() {
